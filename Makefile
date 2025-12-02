@@ -1,0 +1,110 @@
+APP := 'no-app'
+
+ANSI_RESET := \e[0m
+ANSI_YELLOW := \e[0;33m
+ANSI_GREEN := \033[32m
+
+SUCCESS := $(ANSI_GREEN) ✔$(ANSI_RESET)
+
+SERVICE := $(word 2, $(MAKECMDGOALS))
+ifeq ($(SERVICE),)
+	SERVICE = "app"
+endif
+
+REPLICA := $(word 3, $(MAKECMDGOALS))
+ifeq ($(REPLICA),)
+	REPLICA = 1
+endif
+
+SHELL_COMMAND := $(wordlist 4, $(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
+
+
+help:
+	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) install"
+	@echo "    Fetch, build and create initial infrastructure of the app"
+	@echo ""
+	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) git"
+	@echo "    Update code of the app and its submodules"
+	@echo ""
+	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) network"
+	@echo "    Create a shared network"
+	@echo ""
+	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) env"
+	@echo "    Create .env files from examples"
+	@echo ""
+	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) build"
+	@echo "    Build the docker image"
+	@echo ""
+	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) up"
+	@echo "    Bring up the containers"
+	@echo ""
+	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) down"
+	@echo "    Stop the containers"
+	@echo ""
+	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) reup"
+	@echo "    Restart the containers"
+	@echo ""
+	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) deploy"
+	@echo "    Build the docker image and restart the container"
+	@echo ""
+	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) shell <service> <replica>"
+	@echo "    Open a shell in the container"
+	@echo ""
+	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) logs <service> <replica>"
+	@echo "    Open and follow logs of the container"
+	@echo ""
+
+
+install:
+	@make git
+	@make network
+	@make env
+	@make build
+	@make down
+	@make up
+
+
+git:
+	@git fetch && git pull && git submodule update --init --recursive
+
+
+network:
+	@docker network create motivatr-shared-network
+	@echo "$(SUCCESS) network motivatr-shared-network has been created"
+
+
+env:
+	@for file in ./deploy/.*.example; do \
+		copied="$${file%.example}"; \
+		[ -e "$$copied" ] || cp "$$file" "$$copied"; \
+	done
+
+
+build:
+	@docker build -f ./deploy/Dockerfile . --tag motivatr-$(APP)-app-image
+
+
+up:
+	@docker compose -f ./deploy/docker-compose.yml up -d
+
+
+down:
+	@docker compose -f ./deploy/docker-compose.yml down
+
+
+reup: down up
+
+
+deploy: build down up
+
+
+logs:
+	docker logs motivatr-$(APP)-$(SERVICE)-$(REPLICA) -f
+
+
+shell:
+ifeq ($(SHELL_COMMAND),)
+	@docker exec -it motivatr-$(APP)-$(SERVICE)-$(REPLICA) bash
+else
+	@docker exec -it motivatr-$(APP)-$(SERVICE)-$(REPLICA) bash -c "$(SHELL_COMMAND)"
+endif
