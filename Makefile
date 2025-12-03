@@ -11,12 +11,7 @@ ifeq ($(SERVICE),)
 	SERVICE = "app"
 endif
 
-REPLICA := $(word 3, $(MAKECMDGOALS))
-ifeq ($(REPLICA),)
-	REPLICA = 1
-endif
-
-SHELL_COMMAND := $(wordlist 4, $(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
+SHELL_COMMAND := $(wordlist 3, $(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
 
 
 help:
@@ -47,10 +42,10 @@ help:
 	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) deploy"
 	@echo "    Build the docker image and restart the container"
 	@echo ""
-	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) shell <service> <replica>"
+	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) shell <service>"
 	@echo "    Open a shell in the container"
 	@echo ""
-	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) logs <service> <replica>"
+	@echo "$(ANSI_YELLOW)make$(ANSI_RESET) logs <service>"
 	@echo "    Open and follow logs of the container"
 	@echo ""
 
@@ -99,12 +94,12 @@ deploy: build down up
 
 
 logs:
-	docker logs motivatr-$(APP)-$(SERVICE)-$(REPLICA) -f
+	docker logs motivatr-$(APP)-$(SERVICE) -f
 
 
 shell:
 ifeq ($(SHELL_COMMAND),)
-	@docker exec -it motivatr-$(APP)-$(SERVICE)-$(REPLICA) bash
+	@docker exec -it motivatr-$(APP)-$(SERVICE) bash
 else
-	@docker exec -it motivatr-$(APP)-$(SERVICE)-$(REPLICA) bash -c "$(SHELL_COMMAND)"
+	@docker exec -it motivatr-$(APP)-$(SERVICE) bash -c "$(SHELL_COMMAND)"
 endif
