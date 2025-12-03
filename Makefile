@@ -12,6 +12,7 @@ ifeq ($(SERVICE),)
 endif
 
 SHELL_COMMAND := $(wordlist 3, $(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
+MIGRATOR_SUBCOMMANDS := $(wordlist 2, $(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
 
 
 help:
@@ -103,3 +104,22 @@ ifeq ($(SHELL_COMMAND),)
 else
 	@docker exec -it motivatr-$(APP)-$(SERVICE) bash -c "$(SHELL_COMMAND)"
 endif
+
+
+migrator:
+	@if [ ! -d "./motivatr-tool-migrator" ]; then \
+		echo "The motivatr-tool-migrator submodule is not found"; \
+		exit 1; \
+	fi
+	@docker build . \
+		--quiet \
+		--tag motivatr-migrator-image:latest \
+		--file ./motivatr-tool-migrator/deploy/Dockerfile \
+		>/dev/null
+	@docker rm -f motivatr-migrator >/dev/null 2>&1
+	@docker run \
+		--name motivatr-migrator \
+		--env-file ./deploy/.env.db \
+		--network=motivatr-shared-network \
+		motivatr-migrator-image:latest \
+		./migrator $(MIGRATOR_SUBCOMMANDS)
