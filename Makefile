@@ -60,7 +60,7 @@ install:
 
 
 git:
-	@git fetch && git pull && git submodule update --init --recursive
+	@git fetch && git pull && git submodule update --init --recursive --remote
 
 
 network:
