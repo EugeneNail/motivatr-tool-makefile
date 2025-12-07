@@ -55,8 +55,6 @@ install:
 	@make git
 	@make network
 	@make env
-	@make build
-	@make down
 	@make up
 
 
@@ -76,26 +74,16 @@ env:
 	done
 
 
-build:
-	@docker build -f ./deploy/Dockerfile . --tag motivatr-$(APP)-app-image
-
-
 up:
-	@docker compose -f ./deploy/docker-compose.yml up -d
+	@docker compose -f ./deploy/docker-compose.yml up -d --build
 
 
 down:
 	@docker compose -f ./deploy/docker-compose.yml down
 
 
-reup: down up
-
-
-deploy: build down up
-
-
 logs:
-	docker logs motivatr-$(APP)-$(SERVICE) -f
+	@docker logs motivatr-$(APP)-$(SERVICE) -f
 
 
 shell:
